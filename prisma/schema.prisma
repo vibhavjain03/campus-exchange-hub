@@ -1,0 +1,87 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Profile {
+  id             String    @id @default(uuid())
+  email          String    @unique
+  name           String
+  whatsappNumber String?
+  avatarUrl      String?
+  bio            String?
+  passwordHash   String    @map("password_hash")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  listings       Listing[]
+
+  @@map("user_profiles")
+}
+
+model Category {
+  id            Int        @id @default(autoincrement())
+  name          String     @unique
+  slug          String     @unique
+  description   String?
+  parentId      Int?
+  parent        Category?  @relation("CategoryToCategory", fields: [parentId], references: [id], onDelete: Cascade)
+  subcategories Category[] @relation("CategoryToCategory")
+  listings      Listing[]
+  createdAt     DateTime   @default(now())
+
+  @@map("categories")
+}
+
+enum ItemCondition {
+  NEW
+  LIKE_NEW
+  GOOD
+  FAIR
+  POOR
+}
+
+enum ListingStatus {
+  ACTIVE
+  PENDING
+  SOLD
+  DELETED
+}
+
+enum ListingType {
+  MARKETPLACE
+  ACADEMIC
+  SERVICE
+}
+
+model Listing {
+  id          String        @id @default(uuid())
+  userId      String        @map("user_id")
+  user        Profile       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId  Int           @map("category_id")
+  category    Category      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  title       String
+  description String
+  price       Decimal       @db.Decimal(10, 2)
+  condition   ItemCondition
+  status      ListingStatus @default(ACTIVE)
+  listingType ListingType   @default(MARKETPLACE) @map("listing_type")
+  images      ListingImage[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@map("listings")
+}
+
+model ListingImage {
+  id           String   @id @default(uuid())
+  listingId    String   @map("listing_id")
+  listing      Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  url          String
+  displayOrder Int      @map("display_order")
+  createdAt    DateTime @default(now())
+
+  @@map("listing_images")
+}
